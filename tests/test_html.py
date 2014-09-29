@@ -14,11 +14,7 @@ class TestHTML(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Instantiate a factory and compile a regex.
-
-        The compiled regex can be used to find the contents of an HTML tag.
-
-        """
+        """Compile a regex that matches the contents of an HTML tag."""
         cls.matcher = re.compile('^<.*?>(.*?)</.*>$')
 
     def test_length_arg_omitted(self):

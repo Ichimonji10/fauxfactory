@@ -557,46 +557,51 @@ def gen_time():
     )
 
 
-def gen_url(scheme=None, subdomain=None, tlds=None):
+def gen_url(scheme=None, subdomain=None, tld=None, tlds=None):
     """Generates a random URL address
 
-    :param str scheme: Either http, https or ftp.
-    :param str subdomain: A valid subdmain
-    :param str tlds: A qualified top level domain name (e.g. 'com', 'net')
+    This method performs basic sanity checks on its arguments. However, the
+    checks are just that: sanity checks. It is possible to specify a
+    non-existent top-level domain, for example.
+
+    :param str scheme: A URI scheme. One of ``fauxfactory.constants.SCHEMES`` is
+        used if ``None``.
+    :param str subdomain: A subdomain name. (e.g. "example")
+    :param str tld: A top level domain name. (e.g. "net", "eu", "info" or
+        "mailto")
+    :param str tlds: Same as ``tld``, but **deprecated**.
     :raises: ``ValueError`` if arguments are not valid.
     :returns: A random URL address.
     :rtype: str
 
     """
-
-    # Regex for subdomain names
-    subdomainator = re.compile(r"^[a-zA-Z0-9][-\w.~]*$")
-    # Regex for URL scheme
-    schemenator = re.compile(r"^(https?|ftp)$")
-    # Regex for TLDS
-    tldsnator = re.compile(r"^[a-zA-Z]{1,3}$")
-
-    if scheme:
-        if schemenator.match(scheme) is None:
-            raise ValueError("Protocol {0} is not valid.".format(scheme))
-    else:
+    # Give values to all arguments
+    if tld is not None and tlds is not None:
+        raise ValueError(
+            'Provide a value for either "tld" (recommended) or "tlds" '
+            '(deprecated), but not both.'
+        )
+    elif tld is None and tlds is None:
+        tld = gen_choice(TLDS)
+    elif tld is None:  # And tlds is set
+        # FIXME: log out warning
+        tld = tlds
+    if scheme is None:
         scheme = gen_choice(SCHEMES)
-
-    if subdomain:
-        if subdomainator.match(subdomain) is None:
-            raise ValueError("Subdomain {0} is invalid.".format(subdomain))
-    else:
+    if subdomain is None:
         subdomain = gen_choice(SUBDOMAINS)
 
-    if tlds:
-        if tldsnator.match(tlds) is None:
-            raise ValueError("TLDS name {0} is invalid.".format(tlds))
-    else:
-        tlds = gen_choice(TLDS)
+    # Perform a basic sanity check on all arguments. Use ascii mode to alter
+    # behaviour of \w.
+    sanitizer = re.compile(r'^[\w-]+$', re.ASCII)
+    for key, val in {
+            'tld': tld,
+            'scheme': scheme,
+            'subdomain': subdomain}.items():
+        if sanitizer.match(val) is None:
+            raise ValueError('Value for {0} is invalid: {1}'.format(key, val))
 
-    url = u"{0}://{1}.{2}".format(scheme, subdomain, tlds)
-
-    return _make_unicode(url)
+    return u'{0}://{1}.{2}'.format(scheme, subdomain, tld)
 
 
 def gen_utf8(length=10):

@@ -1,194 +1,114 @@
 # -*- coding: utf-8 -*-
-
-"""Tests for URL generator."""
-
-import unittest
-
+"""Tests for ``gen_url``."""
 from fauxfactory import (
     gen_alpha,
     gen_alphanumeric,
     gen_cjk,
-    gen_numeric_string,
     gen_url,
 )
 from fauxfactory.constants import SCHEMES
+import random
+import sys
+import unittest
+# (too-many-public-methods) pylint:disable=R0904
 
 
-class TestURLs(unittest.TestCase):
-    """Test URL generator."""
+class GenUrlTestCase(unittest.TestCase):
+    """Call ``gen_url`` and provide a variety of arguments."""
 
-    def test_gen_url_1(self):
+    def test_unicode(self):
+        """Check whether ``gen_url`` returns a unicode string."""
+        url = gen_url()
+        if sys.version_info[0] is 2:
+            # (undefined-variable) pylint:disable=E0602
+            self.assertIsInstance(url, unicode)  # flake8:noqa
+        else:
+            self.assertIsInstance(url, str)
+
+    def test_no_arguments(self):
+        """Provide no arguments.
+
+        Assert that the generated URL's scheme is a value from ``SCHEMES``.
+
         """
-        @Test: Create a random URL
-        @Feature: URL Generator
-        @Assert:  URL should be created with random values
-        """
+        for _ in range(10):
+            self.assertIn(gen_url().split(':')[0], SCHEMES)
 
-        for turn in range(10):
-            result = gen_url()
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-            self.assertTrue(
-                result.split(":")[0] in SCHEMES,
-                "URL does not start with a valid scheme"
-            )
+    def test_valid_scheme(self):
+        """Provide a value for the ``scheme`` argument.
 
-    def test_gen_url_2(self):
-        """
-        @Test: Create a random URL with http scheme
-        @Feature: URL Generator
-        @Assert:  URL should be created with \'http\' scheme
-        """
+        Assert that the generated URL contains the given scheme in the correct
+        location.
 
-        for turn in range(10):
-            result = gen_url(scheme='http')
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-            self.assertTrue(
-                result.split(":")[0] == 'http',
-                "URL does not start with http"
-            )
-
-    def test_gen_url_3(self):
         """
-        @Test: Create a random URL with https scheme
-        @Feature: URL Generator
-        @Assert: URL should be created with \'https\' scheme
-        """
+        for scheme in ('http', 'https', 'ftp', 'telnet', 'dummy'):
+            self.assertEqual(gen_url(scheme=scheme).split(':')[0], scheme)
 
-        for turn in range(10):
-            result = gen_url(scheme='https')
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-            self.assertTrue(
-                result.split(":")[0] == 'https',
-                "URL does not start with https"
-            )
+    def test_invalid_scheme(self):
+        """Provide an invalid value for the ``scheme`` argument.
 
-    def test_gen_url_4(self):
-        """
-        @Test: Create a random URL with ftp scheme
-        @Feature: URL Generator
-        @Assert: URL should be created with \'ftp\' scheme
-        """
+        Assert that a ``ValueError`` is raised.
 
-        for turn in range(10):
-            result = gen_url(scheme='ftp')
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-            self.assertTrue(
-                result.split(":")[0] == 'ftp',
-                "URL does not start with ftp"
-            )
-
-    def test_gen_url_5(self):
         """
-        @Test: Create a random URL with invalid scheme
-        @Feature: URL Generator
-        @Assert: URL should be created with a random scheme
-        """
-
-        for turn in range(10):
-            scheme = gen_alphanumeric()
+        for scheme in ('', ' ', gen_cjk()):
             with self.assertRaises(ValueError):
                 gen_url(scheme=scheme)
 
-    def test_gen_url_6(self):
-        """
-        @Test: Create a random URL with valid subdomain
-        @Feature: URL Generator
-        @Assert: URL should be created with provided subdomain
-        """
+    def test_valid_subdomain(self):
+        """Provide a value for the ``subdomain`` argument.
 
-        for turn in range(10):
+        Assert that the generated URL contains the given scheme in the correct
+        location.
+
+        """
+        for _ in range(10):
             subdomain = gen_alphanumeric()
-            result = gen_url(subdomain=subdomain)
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-
-            # Breakdown the generated URL
-            scheme_breakdown = result.split("//")
-            domain = scheme_breakdown[1].split(".")
-            self.assertTrue(
-                domain[0] == subdomain
+            self.assertEqual(
+                gen_url(subdomain=subdomain).split('//')[1].split('.')[0],
+                subdomain
             )
 
-    def test_gen_url_7(self):
-        """
-        @Test: Create a random URL with empty subdomain
-        @Feature: URL Generator
-        @Assert: URL should be created with a random subdomain
-        """
+    def test_invalid_subdomain(self):
+        """Provide an invalid value for the ``subdomain`` argument.
 
-        result = gen_url(subdomain='')
-        self.assertTrue(
-            len(result) > 0,
-            "A valid URL was not generated.")
+        Assert that a ``ValueError`` is raised.
 
-    def test_gen_url_8(self):
         """
-        @Test: Create a random URL with whitespace subdomain
-        @Feature: URL Generator
-        @Assert: URL should not be created
-        """
-
-        with self.assertRaises(ValueError):
-            gen_url(subdomain=" ")
-
-    def test_gen_url_9(self):
-        """
-        @Test: Create a random URL with invalid subdomain
-        @Feature: URL Generator
-        @Assert: URL should not be created
-        """
-
-        for turn in range(10):
-            subdomain = gen_cjk()
+        for subdomain in ('', ' ', gen_cjk()):
             with self.assertRaises(ValueError):
                 gen_url(subdomain=subdomain)
 
-    def test_gen_url_10(self):
-        """
-        @Test: Create a random URL with valid TLDS
-        @Feature: URL Generator
-        @Assert: URL should be created with the TLDS provided
-        """
+    def test_valid_tld(self):
+        """Provide a valid value for the ``tld`` argument.
 
-        for turn in range(10):
-            tlds = gen_alpha(length=3)
-            result = gen_url(tlds=tlds)
-            self.assertTrue(
-                len(result) > 0,
-                "A valid URL was not generated.")
-            self.assertTrue(
-                result.split(".")[-1] == tlds,
-                "URL does not have the TLDS specified"
-            )
+        Assert that the generated URL contains the given scheme in the correct
+        location. Provide the same value to both the ``tld`` and deprecated
+        ``tlds`` argument.
 
-    def test_gen_url_11(self):
         """
-        @Test: Create a random URL with numeric TLDS
-        @Feature: URL Generator
-        @Assert: URL should not be created
-        """
+        for _ in range(10):
+            tld = gen_alpha(length=random.randint(1, 10))
+            self.assertEqual(gen_url(tld=tld).split('.')[-1], tld)
+            self.assertEqual(gen_url(tlds=tld).split('.')[-1], tld)
 
-        for turn in range(10):
+    def test_invalid_tld(self):
+        """Provide an invalid value for the ``tld`` argument.
+
+        Assert that a ``ValueError`` is raised. Provide the same value to both
+        the ``tld`` and deprecated ``tlds`` argument.
+
+        """
+        for tld in ('', ' ', gen_cjk()):
             with self.assertRaises(ValueError):
-                tlds = gen_numeric_string(length=3)
-                gen_url(tlds=tlds)
-
-    def test_gen_url_12(self):
-        """
-        @Test: Create a random URL with whitespace TLDS
-        @Feature: URL Generator
-        @Assert: URL should not be created
-        """
-
-        for turn in range(10):
+                gen_url(tld=tld)
             with self.assertRaises(ValueError):
-                gen_url(tlds=" ")
+                gen_url(tlds=tld)
+
+    def test_tld_and_tlds(self):
+        """Provide a value for both ``tld`` and ``tlds``.
+
+        Assert that a ``ValueError`` is raised.
+
+        """
+        with self.assertRaises(ValueError):
+            gen_url(tld='foo', tlds='bar')
